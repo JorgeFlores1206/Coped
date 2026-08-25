@@ -3,6 +3,7 @@ import { createAuthenticatedSupabaseClient, supabase } from './supabaseClient';
 
 export type OrderStatus = 'pending' | 'active' | 'terminated';
 export type Order = { id: string; code: string; client: string; product: string; quantity: number; sector_id: number; status: OrderStatus; position: number; updated_at: string };
+export const TOTAL_SECTORS = 6;
 
 const now = () => new Date().toISOString();
 
@@ -33,9 +34,9 @@ export async function activateOrder(orderId: string, sectorId: number) {
 }
 
 export async function finishOrder(orderId: string, currentSectorId: number) {
-  const nextValues = currentSectorId < 4
+  const nextValues = currentSectorId < TOTAL_SECTORS
     ? { sector_id: currentSectorId + 1, status: 'pending' as const, position: 0, updated_at: now() }
-    : { sector_id: 4, status: 'terminated' as const, position: 0, updated_at: now() };
+    : { sector_id: TOTAL_SECTORS, status: 'terminated' as const, position: 0, updated_at: now() };
   const { error, count } = await supabase.from('orders').update(nextValues, { count: 'exact' }).eq('id', orderId).eq('sector_id', currentSectorId).eq('status', 'active');
   if (error) throw new Error(`No se pudo terminar el pedido: ${error.message}`);
   if (count !== 1) throw new Error('El pedido no pudo avanzar. Verifica la política RLS de actualización del sector.');
